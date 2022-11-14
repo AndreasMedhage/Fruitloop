@@ -3,3 +3,5 @@
 	Novogen - Sequences sequenced by Novogen
 
 	Uppsala - Sequences sequenced by Uppsala
+
+	Reference - Reference genome for Sorghum Bicolor (BTx623)
