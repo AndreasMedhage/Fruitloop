@@ -1,8 +1,8 @@
 #!/usr/bin/env nextflow
 
-raw_reads='/proj/snic2022-23-502/private/Fruitloop/Data/Sequences/testuppsala/'
-out_dir_trimmed='/proj/snic2022-23-502/private/Fruitloop/Data/Trimmed/testuppsala'
-out_dir_qc='/proj/snic2022-23-502/private/Fruitloop/Res/QualityControll/testuppsala'
+raw_reads=(params.rawreads)
+out_dir_trimmed=(params.outdirtrimmed)
+out_dir_qc=(params.outdirqc)
 
 read_pair = Channel.fromFilePairs( "${raw_reads}/*R[1,2]*", type: 'file')
 
