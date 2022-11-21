@@ -1,8 +1,8 @@
 #!/usr/bin/env nextflow
 
-raw_reads=(params.rawreads)
-out_dir_trimmed=(params.outdirtrimmed)
-out_dir_qc=(params.outdirqc)
+raw_reads = params.rawreads
+out_dir_trimmed = params.outdirtrimmed
+out_dir_qc = params.outdirqc
 
 read_pair = Channel.fromFilePairs( "${raw_reads}/*R[1,2]*", type: 'file')
 
