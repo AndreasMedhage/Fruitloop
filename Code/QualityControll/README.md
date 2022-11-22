@@ -13,8 +13,8 @@ QualityControl - directory storing code used for trimming and qualty controll
 		--readpairpattern - pattern to distinguish forward and reverse read
 		-c - config file
 		-profile uppmax - nextflow profile
-                --project <project code>
-                --clusterOptions "-M <server>"
+		--project <project code>
+		--clusterOptions "-M <server>"
 
 
 	nextflow.config - configuration file for main.nf
