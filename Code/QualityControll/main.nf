@@ -17,7 +17,6 @@ process runFastP {
                 file("trimmed_files/${sample}_trimmed_*.gz") into trimmed_channel
                 file("report_files/${sample}*.json") into json_report
         """
-        module load fastp/0.23.2
         mkdir trimmed_files
         mkdir report_files
         fastp \
@@ -35,7 +34,6 @@ process runMultiQC {
         output:
                 file("multiqc_report.html")
         """
-        module load MultiQC/1.12
         multiqc .
         """
 }
