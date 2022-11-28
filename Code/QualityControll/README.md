@@ -8,13 +8,13 @@ QualityControl - directory storing code used for trimming and qualty controll
 
 	main.nf - main nextflow file for the for quality controll pipeline
 		--rawreads - is the input directory, containing forward and reverse reads marked with "R1" and "R2" respectivly
-                --outdirtrimmed - is the outdirectory for fast qc. Will create folders "trimmed" containing trimmed sequences and "report_files" containing fast p quality reports as json files
-                --outdirqc - is the outdirectory for quality controll report
+		--outdirtrimmed - is the outdirectory for fast qc. Will create folders "trimmed" containing trimmed sequences and "report_files" containing fast p quality reports as json files
+		--outdirqc - is the outdirectory for quality controll report
 		--readpairpattern - pattern to distinguish forward and reverse read
 		-c - config file
 		-profile uppmax - nextflow profile
-                --project <project code>
-                --clusterOptions "-M <server>"
+		--project <project code>
+		--clusterOptions "-M <server>"
 
 
 	nextflow.config - configuration file for main.nf
