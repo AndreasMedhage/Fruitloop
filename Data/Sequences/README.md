@@ -4,4 +4,4 @@
 
 	Uppsala - sequences sequenced by Uppsala
 
-	Reference - reference genome for Sorghum Bicolor (BTx623)
+	Reference - reference genome for Sorghum Bicolor (BTx623) from NCBI
