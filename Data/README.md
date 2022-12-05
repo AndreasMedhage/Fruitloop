@@ -9,5 +9,3 @@
         	Reference - reference genome for Sorghum Bicolor (BTx623) from NCBI
 
 	Trimmed - directory for storing trimmed sequences
-
-	knownVariants - directory storing known variant files from Ensemble
