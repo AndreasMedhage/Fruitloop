@@ -5,3 +5,5 @@
 	Uppsala - sequences sequenced by Uppsala
 
 	Reference - reference genome for Sorghum Bicolor (BTx623) from NCBI
+
+	snpEff_db - directory containing gff file for creating SNPeff database
