@@ -9,3 +9,5 @@
         	Reference - reference genome for Sorghum Bicolor (BTx623) from NCBI
 
 	Trimmed - directory for storing trimmed sequences
+
+	snpEff_db - directory containing files for creating SNPeff database
