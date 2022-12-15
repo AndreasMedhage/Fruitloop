@@ -35,7 +35,7 @@ process index_bwa {
 	file "*" into bwa_index  
 
 	"""
-	bwa-mem2 index -p reference ${reference} 
+	bwa-mem2 index ${reference} 
 	"""
 }
 
@@ -148,13 +148,13 @@ process known_variants {
         file indexed_reads from indexed_bam_ch
 
 	output:
-	file("${reads.baseName}.vcf") into known_variants_ch
-	file("${reads.baseName}.vcf.idx") into index_ch
+	file("${reads.baseName}.vcf.gz") into known_variants_ch
+	file("${reads.baseName}.vcf.gz.idx") into index_ch
 
 	"""
 	gatk HaplotypeCaller \
 	-R ${reference} \
-	-O ${reads.baseName}.vcf \
+	-O ${reads.baseName}.vcf.gz \
 	-I ${reads} \
 	--native-pair-hmm-threads 8 \
 	--QUIET true
@@ -172,20 +172,20 @@ process extract_known_snp_indel {
 	file variants from known_variants_ch
 
 	output:
-	file("*_snps.vcf") into known_snps_ch
-	file("*_indels.vcf") into known_indels_ch
+	file("${variants.simpleName}_snps.vcf.gz") into known_snps_ch
+	file("${variants.simpleName}_indels.vcf.gz") into known_indels_ch
 	"""
 	gatk SelectVariants \
 	-R ${reference} \
 	-V ${variants} \
 	-select-type SNP \
-	-O ${variants.baseName}_snps.vcf
+	-O ${variants.simpleName}_snps.vcf.gz
 
 	gatk SelectVariants \
 	-R ${reference} \
 	-V ${variants} \
 	-select-type INDEL \
-	-O ${variants.baseName}_indels.vcf
+	-O ${variants.simpleName}_indels.vcf.gz
 	"""
 }
 
@@ -200,13 +200,13 @@ process filter_known_snps {
 	file snps from known_snps_ch
 
 	output:
-	file("*_filtered.vcf") into filtered_known_snps_ch
+	file("${snps.simpleName}_filtered.vcf.gz") into filtered_known_snps_ch
 
 	"""
 	gatk VariantFiltration \
         -R ${reference} \
         -V ${snps} \
-	-O ${snps.baseName}_filtered.vcf \
+	-O ${snps.simpleName}_filtered.vcf.gz \
 	-filter-name "QD_filter" -filter "QD $params.qd_snp" \
 	-filter-name "FS_filter" -filter "FS $params.fs_snp" \
 	-filter-name "MQ_filter" -filter "MQ $params.mq_snp" \
@@ -226,12 +226,12 @@ process filter_known_indels {
 	file indels from known_indels_ch
 
 	output:
-	file("*_filtered.vcf") into filtered_known_indels_ch
+	file("${indels.simpleName}_filtered.vcf.gz") into filtered_known_indels_ch
 	"""	
 	gatk VariantFiltration \
 	-R ${reference} \
 	-V ${indels} \
-	-O ${indels.baseName}_filtered.vcf \
+	-O ${indels.simpleName}_filtered.vcf.gz \
 	-filter-name "QD_filter" -filter "QD $params.qd_indel" \
 	-filter-name "FS_filter" -filter "FS $params.fs_indel" \
 	-filter-name "ReadPosRankSum_filter" -filter "ReadPosRankSum $params.rprs_indel"	
@@ -384,20 +384,20 @@ process extract_snp_indel {
 	file variants from complete_vcf_ch
 
 	output:
-	file("snps_recal.vcf") into snps_ch
-	file("indels_recal.vcf") into indels_ch
+	file("snps_recal.vcf.gz") into snps_ch
+	file("indels_recal.vcf.gz") into indels_ch
 
 	"""
 	gatk SelectVariants \
 	-R ${reference} \
 	-V ${variants} \
 	-select-type SNP \
-	-O snps_recal.vcf
+	-O snps_recal.vcf.gz
 	gatk SelectVariants \
 	-R ${reference} \
 	-V ${variants} \
 	-select-type INDEL \
-	-O indels_recal.vcf
+	-O indels_recal.vcf.gz
 	"""
 }
 process filter_snps {
@@ -413,15 +413,14 @@ process filter_snps {
 	file snps from snps_ch
 
 	output:
-	file("snps/filtered_snps.vcf") into filtered_snps_ch
-	file("snps/filtered_snps.vcf") into snp_for_snpeff
+	file("snps/filtered_snps.vcf.gz") into snp_for_snpeff
 	
 	"""
 	mkdir snps
 	gatk VariantFiltration \
         -R ${reference} \
         -V ${snps} \
-	-O snps/filtered_snps.vcf \
+	-O snps/filtered_snps.vcf.gz \
 	-filter-name "QD_filter" -filter "QD $params.qd_snp" \
 	-filter-name "FS_filter" -filter "FS $params.fs_snp" \
 	-filter-name "MQ_filter" -filter "MQ $params.mq_snp" \
@@ -440,14 +439,13 @@ process filter_indels {
 	file indels from indels_ch
 
 	output:
-	file("filtered_indels.vcf") into filtered_indels_ch
-	file("filtered_indels.vcf") into indels_for_snpeff
+	file("filtered_indels.vcf.gz") into indels_for_snpeff
 
 	"""
 	gatk VariantFiltration \
 	-R ${reference} \
 	-V ${indels} \
-	-O filtered_indels.vcf \
+	-O filtered_indels.vcf.gz \
 	-filter-name "QD_filter" -filter "QD $params.qd_indel" \
 	-filter-name "FS_filter" -filter "FS $params.fs_indel" \
 	-filter-name "ReadPosRankSum_filter" -filter "ReadPosRankSum $params.rprs_indel"
