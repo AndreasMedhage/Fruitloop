@@ -19,37 +19,35 @@ process unzip_reference {
         file("reference.fa") into ref_bwa_ch, ref_sam_ch, ref_dict_ch, ref_known_variants_ch, ref_extract_known_ch, ref_filter_known_snps_ch, ref_filter_known_indels_ch, ref_bsqr_ch, ref_variant_ch, ref_merge_ch, ref_genotype_ch, ref_extract_ch, ref_filter_snps_ch, ref_filter_indels_ch
 
         """
-	if (file ${reference} | grep -q compressed ); then
-        	gunzip -c ${reference} > reference.fa
-	else
-		cp ${reference} reference.fa
-	fi
+       	gunzip -c ${reference} > reference.fa
         """
 }
 
 
 process index_bwa {
+	container 'dceoy/bwa-mem2:latest'
 	cpus {8}
 	
 	input:	
-	file ref from ref_bwa_ch
+	file reference from ref_bwa_ch
 
 	output:
 	file "*" into bwa_index  
 
 	"""
-	bwa-mem2 index -p reference ${ref} 
+	bwa-mem2 index -p reference ${reference} 
 	"""
 }
 
 process samtools_index {
+	container 'staphb/samtools:latest'
 	cpus {8}
 
 	input:
-	file ref from ref_sam_ch
+	file reference from ref_sam_ch
 
 	output:
-	file("reference*.fai") into sam_known_variants, sam_extract_known, sam_filter_known_snps, sam_filter_known_indels, sam_bsqr_ch, sam_varaiant_ch, sam_merge_ch, sam_genotype_ch, sam_extract_ch, sam_filter_snps_ch, sam_filter_indels_ch
+	file("reference*.fai") into sam_known_variants, sam_extract_known, sam_filter_known_snps, sam_filter_known_indels, sam_bsqr_ch, sam_variant_ch, sam_merge_ch, sam_genotype_ch, sam_extract_ch, sam_filter_snps_ch, sam_filter_indels_ch
 
 	"""
 	samtools faidx reference.fa
@@ -57,23 +55,24 @@ process samtools_index {
 }
 
 process sequence_dictionary {
+	container 'broadinstitute/gatk:latest'
 	cpus {8}
 
 	input:
-	file ref from ref_dict_ch
+	file reference from ref_dict_ch
 	
 	output:
-	file("${ref.baseName}.dict") into dict_known_variants, dict_extract_known, dict_filter_known_snps, dict_filter_known_indels, dict_bsqr_ch, dict_variant_ch, dict_merge_ch, dict_genotype_ch, dict_extract_ch, dict_filter_snps_ch, dict_filter_indels_ch
+	file("${reference.baseName}.dict") into dict_known_variants, dict_extract_known, dict_filter_known_snps, dict_filter_known_indels, dict_bsqr_ch, dict_variant_ch, dict_merge_ch, dict_genotype_ch, dict_extract_ch, dict_filter_snps_ch, dict_filter_indels_ch
 
 	"""
-	java -jar $PICARD_ROOT/picard.jar \
-	CreateSequenceDictionary \
-	-R ${ref} \
-	-O ${ref.baseName}.dict
+	gatk CreateSequenceDictionary \
+	-R ${reference} \
+	-O ${reference.baseName}.dict
 	"""
 }
 
 process align_bwa {
+	container 'dceoy/bwa-mem2:latest'
 	cpus {16}
 
 	input:
@@ -90,6 +89,7 @@ process align_bwa {
 }
 
 process bam_sort {
+	container 'staphb/samtools:latest'
 	cpus {8}
 
 	input: 	
@@ -104,6 +104,7 @@ process bam_sort {
 }
 
 process bam_markdup {
+	container 'broadinstitute/gatk:latest'
 	cpus {8}
 	
 	input:
@@ -113,7 +114,7 @@ process bam_markdup {
 	file("${aligns.baseName}_dedup.bam") into dedup_index_ch, dedup_known_ch, dedup_bsqr_ch, dedup_ch
 
 	"""
-	java -jar $PICARD_ROOT/picard.jar MarkDuplicates \
+	gatk MarkDuplicates \
 	--INPUT ${aligns} \
 	--OUTPUT ${aligns.baseName}_dedup.bam \
 	-M marked_dup_metrics.txt
@@ -121,6 +122,7 @@ process bam_markdup {
 }
 
 process index_bam {
+	container 'staphb/samtools:latest'
 	cpus {8}
 	
 	input:
@@ -135,13 +137,14 @@ process index_bam {
 } 
 
 process known_variants {
+	container 'broadinstitute/gatk:latest'
 	cpus {16}
 
 	input:
 	file reference from ref_known_variants_ch
 	file index from sam_known_variants
 	file dict from dict_known_variants
-	file reads from dedup__known_ch
+	file reads from dedup_known_ch
         file indexed_reads from indexed_bam_ch
 
 	output:
@@ -159,6 +162,7 @@ process known_variants {
 }
 
 process extract_known_snp_indel {
+	container 'broadinstitute/gatk:latest'
 	cpus {8}
 
 	input:
@@ -186,6 +190,7 @@ process extract_known_snp_indel {
 }
 
 process filter_known_snps {
+	container 'broadinstitute/gatk:latest'
 	cpus{16}
 	
 	input:
@@ -211,6 +216,7 @@ process filter_known_snps {
 }
 
 process filter_known_indels {
+	container 'broadinstitute/gatk:latest'
 	cpus{16}
 	
 	input:
@@ -234,6 +240,7 @@ process filter_known_indels {
 
 
 process bqsr_initialization {
+	container 'broadinstitute/gatk:latest'
         cpus {16}
 
         input:
@@ -265,6 +272,7 @@ process bqsr_initialization {
 }
 
 process apply_bqsr {
+	container 'broadinstitute/gatk:latest'
         cpus {16}
 
         input:
@@ -284,7 +292,8 @@ process apply_bqsr {
 }
 
 process variant_calling {
-        cpus {16}
+        container 'broadinstitute/gatk:latest'
+	cpus {16}
 
         publishDir "${outdir}", mode: 'copy', pattern: '*.g.vcf.gz'
         publishDir "${outdir}", mode: 'copy', pattern: '*_final.bam'
@@ -318,6 +327,7 @@ process variant_calling {
 }
 
 process merge_gvcf {
+	container 'broadinstitute/gatk:latest'
         cpus{16}
 
         input:
@@ -343,7 +353,8 @@ process merge_gvcf {
 }
 
 process genotype_gvcf {
-        cpus{16}
+        container 'broadinstitute/gatk:latest'
+	cpus{16}
 
         input:
         file reference from ref_genotype_ch
@@ -352,7 +363,7 @@ process genotype_gvcf {
         file merged_var from merged_gvcf_ch
 
         output:
-        file {variants.vcf.gz}
+        file {variants.vcf.gz} into complete_vcf_ch
 
         """
          gatk --java-options "-Xmx4g" GenotypeGVCFs \
@@ -363,13 +374,14 @@ process genotype_gvcf {
 }
 
 process extract_snp_indel {
+	container 'broadinstitute/gatk:latest'
 	cpus {16}
 
 	input:
 	file reference from ref_extract_ch
 	file index from sam_extract_ch
 	file dict from dict_extract_ch
-	file variants from merged_gvcf_ch
+	file variants from complete_vcf_ch
 
 	output:
 	file("snps_recal.vcf") into snps_ch
@@ -389,6 +401,7 @@ process extract_snp_indel {
 	"""
 }
 process filter_snps {
+	container 'broadinstitute/gatk:latest'
 	cpus{16}
 	
 	publishDir "${outdir}", mode: 'copy'
@@ -400,8 +413,9 @@ process filter_snps {
 	file snps from snps_ch
 
 	output:
-	file("snps/filtered_snps.vcf") into filtered_snps.ch
-
+	file("snps/filtered_snps.vcf") into filtered_snps_ch
+	file("snps/filtered_snps.vcf") into snp_for_snpeff
+	
 	"""
 	mkdir snps
 	gatk VariantFiltration \
@@ -416,6 +430,7 @@ process filter_snps {
 	"""
 }
 process filter_indels {
+	container 'broadinstitute/gatk:latest'
 	cpus{16}
 	
 	input:
@@ -425,7 +440,8 @@ process filter_indels {
 	file indels from indels_ch
 
 	output:
-	file("filtered_indels.vcf") into filtered_indels.ch
+	file("filtered_indels.vcf") into filtered_indels_ch
+	file("filtered_indels.vcf") into indels_for_snpeff
 
 	"""
 	gatk VariantFiltration \
@@ -437,3 +453,40 @@ process filter_indels {
 	-filter-name "ReadPosRankSum_filter" -filter "ReadPosRankSum $params.rprs_indel"
 	"""
 }
+
+process annotate_snp{
+	container 'dceoy/snpeff:latest'
+	cpus{8}
+	
+	publishDir "${outdir}", mode: 'copy', pattern: '*.html'
+	publishDir "${outdir}", mode: 'copy', pattern: '*.ann.vcf'
+	input:
+	file filtered_snp from snp_for_snpeff
+
+	output:
+	file ("ann_snp.ann.vcfz")
+	file("snp_annotation_report.html")
+
+	"""
+	java -Xmx8g -jar snpEff.jar -v -stats snp_annotation_report.html Sorghum_bicolor ${filtered_snp}  > ann_snp.ann.vcfz
+	"""
+}
+
+process annotate_indels{
+	container 'dceoy/snpeff:latest'
+        cpus{8}
+
+        publishDir "${outdir}", mode: 'copy', pattern: '*.html'
+        publishDir "${outdir}", mode: 'copy', pattern: '*.ann.vcf'
+        input:
+        file filtered_indels from indels_for_snpeff
+
+        output:
+        file ("ann_indels.ann.vcfz")
+        file("indel_annotation_report.html")
+
+        """
+        java -Xmx8g -jar snpEff.jar -v -stats indel_annotation_report.html Sorghum_bicolor ${filtered_snp}  > ann_indels.ann.vcfz
+        """
+}
+
