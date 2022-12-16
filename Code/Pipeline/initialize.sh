@@ -7,7 +7,7 @@ export NXF_HOME="/proj/snic2022-23-502/private/Fruitloop/Code/Pipeline"
 nextflow run main.nf --inputreads '/proj/snic2022-23-502/private/Fruitloop/Data/Trimmed/test'\
  --refgenome "/proj/snic2022-23-502/private/Fruitloop/Data/Sequences/Reference/GCF_000003195.3_Sorghum_bicolor_NCBIv3_genomic.fna.gz"\
  --outdir "/proj/snic2022-23-502/private/Fruitloop/Res/Pipeline/test/"\
- -c nextflow.config -profile uppmax --project "snic2022-22-30" --clusterOptions "-M rackham" -resume
+ -c nextflow.config -profile uppmax --project "snic2022-22-1048" --clusterOptions "-M rackham" -resume
 
 
 
