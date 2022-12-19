@@ -77,11 +77,11 @@ process align_sort {
 	file "*" from bwa_index
 
 	output:
-	file ("${aligns.baseName}_sorted.bam") into sorted_aligns
+	file ("${sample}_sorted.bam") into sorted_aligns
 
 	"""
 	bwa-mem2 mem -t 16 -R '@RG\\tID:${sample}\\tSM:${sample}\\tPL:Illumina' \
-	reference ${reads.get(0)} ${reads.get(1)} | samtools sort --threads 16 -o ${aligns.baseName}_sorted.bam -O BAM ${aligns}  
+	reference ${reads.get(0)} ${reads.get(1)} | samtools sort --threads 16 -o ${sample}_sorted.bam -O BAM
         """
 }
 
@@ -132,7 +132,7 @@ process known_variants {
 
 	output:
 	file("${reads.baseName}.vcf.gz") into known_variants_ch
-	file("${reads.baseName}.vcf.gz.idx") into index_ch
+	file("${reads.baseName}.vcf.gz.tbi") into known_index_ch
 
 	"""
 	gatk HaplotypeCaller \
@@ -153,6 +153,7 @@ process extract_known_snp_indel {
 	file index from sam_extract_known
         file dict from dict_extract_known
 	file variants from known_variants_ch
+	file index from known_index_ch
 
 	output:
 	file("${variants.simpleName}_snps.vcf.gz") into known_snps_ch
@@ -291,7 +292,7 @@ process variant_calling {
 
         output:
         file("GVCF/${reads.baseName}.g.vcf.gz") into variants_ch
-        file("GVCF/${reads.baseName}.g.vcf.gz.tbi") into var_index_ch
+        file("GVCF/${reads.baseName}.g.vcf.tbi") into var_index_ch
         file("final_bam/${reads.baseName}_final.bam") into final_bam_ch
 		
 	"""
