@@ -158,6 +158,8 @@ process extract_known_snp_indel {
 	output:
 	file("${variants.simpleName}_snps.vcf.gz") into known_snps_ch
 	file("${variants.simpleName}_indels.vcf.gz") into known_indels_ch
+	file("${variants.simpleName}_snps.vcf.gz.tbi") into known_snps_index
+	file("${variants.simpleName}_indels.vcf.gz.tbi") into known_indels_index
 	"""
 	gatk SelectVariants \
 	-R ${reference} \
@@ -182,6 +184,7 @@ process filter_known_snps {
 	file index from sam_filter_known_snps
         file dict from dict_filter_known_snps
 	file snps from known_snps_ch
+	file snp_inddex from known_snps_index
 
 	output:
 	file("${snps.simpleName}_filtered.vcf.gz") into filtered_known_snps_ch
@@ -208,6 +211,7 @@ process filter_known_indels {
 	file index from sam_filter_known_indels
         file dict from dict_filter_known_indels
 	file indels from known_indels_ch
+	file indels_inddex from known_indels_index
 
 	output:
 	file("${indels.simpleName}_filtered.vcf.gz") into filtered_known_indels_ch
@@ -292,7 +296,7 @@ process variant_calling {
 
         output:
         file("GVCF/${reads.baseName}.g.vcf.gz") into variants_ch
-        file("GVCF/${reads.baseName}.g.vcf.tbi") into var_index_ch
+        file("GVCF/${reads.baseName}.g.vcf.gz.tbi") into var_index_ch
         file("final_bam/${reads.baseName}_final.bam") into final_bam_ch
 		
 	"""
@@ -323,6 +327,7 @@ process merge_gvcf {
 
         output:
         file("mergedGVCFs.g.vcf.gz") into merged_gvcf_ch
+	file("mergedGVCFs.g.vcf.gz.tbi") into merged_index
 
         """
         for vcf in \$(ls *.vcf.gz); do
@@ -345,9 +350,11 @@ process genotype_gvcf {
         file index from sam_genotype_ch
         file dict from dict_genotype_ch
         file merged_var from merged_gvcf_ch
+	file variant_index from merged_index
 
         output:
         file {variants.vcf.gz} into complete_vcf_ch
+	file {variants.vcf.gz.tbi} into complete_vcf_index
 
         """
          gatk --java-options "-Xmx4g" GenotypeGVCFs \
@@ -366,10 +373,13 @@ process extract_snp_indel {
 	file index from sam_extract_ch
 	file dict from dict_extract_ch
 	file variants from complete_vcf_ch
+	file variant_index from complete_vcf_index
 
 	output:
 	file("snps_recal.vcf.gz") into snps_ch
 	file("indels_recal.vcf.gz") into indels_ch
+	file("snps_recal.vcf.gz.tbi") into snps_recal_index
+        file("indels_recal.vcf.gz.tbi") into indels_recal_index
 
 	"""
 	gatk SelectVariants \
@@ -395,6 +405,7 @@ process filter_snps {
         file index from sam_filter_snps_ch
         file dict from dict_filter_snps_ch
 	file snps from snps_ch
+	file snp_index from snps_recal_index
 
 	output:
 	file("snps/filtered_snps.vcf.gz") into snp_for_snpeff
@@ -421,6 +432,7 @@ process filter_indels {
 	file index from sam_filter_indels_ch
         file dict from dict_filter_indels_ch
 	file indels from indels_ch
+	file indels_index from indels_recal_index
 
 	output:
 	file("filtered_indels.vcf.gz") into indels_for_snpeff
