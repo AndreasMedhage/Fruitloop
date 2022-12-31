@@ -1,12 +1,12 @@
 Pipline - directory pipline code
 
         initialize.sh - bash script for running pipeline
-                
 
         main.nf - main nextflow file for the for quality controll pipeline
 		--inputreads - input directory, containing forward and reverse reads
 		--refgenome - reference genome to map reads to
 		--outdir - out directory, where output files should be pubished
+		--annotation_db - database for annotation
 		-c - config file
  		-profile - nextflow profile
 		--project - project code
@@ -16,12 +16,10 @@ Pipline - directory pipline code
 		REWUIRE: nextflow, samtools, BWA-mem2
 
         nextflow.config - configuration file for main.nf
-                process.executor ='slurm'
-                process.time="<time> h"
-                process.cpus="<cpus>"
-                process.memory="<memory> GB"
+                process.executor - executor
+                process.time - time allocated to each process
                 process.clusterOptions - allows further parameters
-
+		process.scratch - use scratch dir to minimize storage of intermediate files
 		params {
 			pattern - pattern for destinguising forward and revers, for example "*R[1,2]*.gz" forward marked with R1 and reverse marked
 			qd_snp -  QualByDepth filter for SNPs, ex "< 2.0"
@@ -36,13 +34,16 @@ Pipline - directory pipline code
 
 To run:
 
-edit inizialize.sh
-	set trimmedreads to path to direcory containging forward and reverse reads
-	set outdirectory to path directory to output into
-	set refgenome to path to reference genome file
+1. edit inizialize.sh
+	1.1. set trimmedreads to path to direcory containging forward and reverse reads
+	1.2. set outdirectory to path directory to output into
+	1.3. set refgenome to path to reference genome file
+	1.4. set annotation_db
 
-edit config file set up pattern forward/reverse and filter parameter values
+2. edit config file set up pattern
+	2.1. select pattern forward/reverse
+	2.2. set up filter parameter values (parameters based on standar parameters of best practice, if others parameters are needed they need to be set up in the main file)
 
-run the script "sh initialize.sh"
+3. run the script "sh initialize.sh"
 
 
