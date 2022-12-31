@@ -177,7 +177,7 @@ process extract_known_snp_indel {
 
 process filter_known_snps {
 	container 'broadinstitute/gatk:latest'
-	cpus{16}
+	cpus {16}
 	
 	input:
 	file reference from ref_filter_known_snps_ch
@@ -204,7 +204,7 @@ process filter_known_snps {
 
 process filter_known_indels {
 	container 'broadinstitute/gatk:latest'
-	cpus{16}
+	cpus {16}
 	
 	input:
 	file reference from ref_filter_known_indels_ch
@@ -283,8 +283,7 @@ process variant_calling {
         container 'broadinstitute/gatk:latest'
 	cpus {16}
 
-        publishDir "${outdir}", mode: 'copy', pattern: '*.g.vcf.gz'
-        publishDir "${outdir}", mode: 'copy', pattern: '*_final.bam'
+        publishDir "${out_dir}", mode: 'copy'
 
         input:
         file reference from ref_variant_ch
@@ -315,172 +314,170 @@ process variant_calling {
 }
 
 process merge_gvcf {
-	container 'broadinstitute/gatk:latest'
-        cpus{16}
+        container 'broadinstitute/gatk:latest'
+        cpus {16}
 
         input:
         file reference from ref_merge_ch
         file index from sam_merge_ch
         file dict from dict_merge_ch
-        file variants from variants_ch
-        file var_index from var_index_ch
+        file variants from variants_ch.collect()
+        file var_index from var_index_ch.collect()
 
         output:
-        file("mergedGVCFs.g.vcf.gz") into merged_gvcf_ch
-	file("mergedGVCFs.g.vcf.gz.tbi") into merged_index
+        file("mergedGVCFs.g.vcf.gz") into combined_gvcf_ch
+        file("mergedGVCFs.g.vcf.gz.tbi") into combined_index_ch
 
         """
-        for vcf in \$(ls *.vcf.gz); do
-                echo \$vcf >> variant_files.list
+        for vcf in ${variants}; do
+                echo \$vcf >> gvcf.list
         done
 
         gatk CombineGVCFs \
         -R ${reference} \
-        --variant variant_files.list \
+        --variant gvcf.list \
         -O mergedGVCFs.g.vcf.gz
         """
 }
 
 process genotype_gvcf {
         container 'broadinstitute/gatk:latest'
-	cpus{16}
+        cpus {16}
 
         input:
         file reference from ref_genotype_ch
         file index from sam_genotype_ch
         file dict from dict_genotype_ch
-        file merged_var from merged_gvcf_ch
-	file variant_index from merged_index
+        file variants from combined_gvcf_ch
+        file varindex from combined_index_ch
 
         output:
-        file {variants.vcf.gz} into complete_vcf_ch
-	file {variants.vcf.gz.tbi} into complete_vcf_index
+        file {"variants.vcf.gz"} into complete_vcf_ch
+        file {"variants.vcf.gz.tbi"} into complete_vcf_index_ch
 
         """
-         gatk --java-options "-Xmx4g" GenotypeGVCFs \
-        -R ${reference} \
-        -V ${merged_var} \
-        -O variants.vcf.gz
+        gatk --java-options "-Xmx4g" GenotypeGVCFs -R ${reference} -V mergedGVCFs.g.vcf.gz -O variants.vcf.gz
         """
 }
 
 process extract_snp_indel {
-	container 'broadinstitute/gatk:latest'
-	cpus {16}
+        container 'broadinstitute/gatk:latest'
+        cpus {16}
 
-	input:
-	file reference from ref_extract_ch
-	file index from sam_extract_ch
-	file dict from dict_extract_ch
-	file variants from complete_vcf_ch
-	file variant_index from complete_vcf_index
+        input:
+        file reference from ref_extract_ch
+        file index from sam_extract_ch
+        file dict from dict_extract_ch
+        file variants from complete_vcf_ch
+        file variant_index from complete_vcf_index_ch
 
-	output:
-	file("snps_recal.vcf.gz") into snps_ch
-	file("indels_recal.vcf.gz") into indels_ch
-	file("snps_recal.vcf.gz.tbi") into snps_recal_index
+        output:
+        file("snps_recal.vcf.gz") into snps_ch
+        file("indels_recal.vcf.gz") into indels_ch
+        file("snps_recal.vcf.gz.tbi") into snps_recal_index
         file("indels_recal.vcf.gz.tbi") into indels_recal_index
 
-	"""
-	gatk SelectVariants \
-	-R ${reference} \
-	-V ${variants} \
-	-select-type SNP \
-	-O snps_recal.vcf.gz
-	gatk SelectVariants \
-	-R ${reference} \
-	-V ${variants} \
-	-select-type INDEL \
-	-O indels_recal.vcf.gz
-	"""
+        """
+        gatk SelectVariants \
+        -R ${reference} \
+        -V ${variants} \
+        -select-type SNP \
+        -O snps_recal.vcf.gz
+        gatk SelectVariants \
+        -R ${reference} \
+        -V ${variants} \
+        -select-type INDEL \
+        -O indels_recal.vcf.gz
+        """
 }
-process filter_snps {
-	container 'broadinstitute/gatk:latest'
-	cpus{16}
-	
-	publishDir "${outdir}", mode: 'copy'
 
-	input:
-	file reference from ref_filter_snps_ch
+process filter_snps {
+        container 'broadinstitute/gatk:latest'
+        cpus {16}
+        publishDir "${out_dir}", mode: 'copy'
+
+        input:
+        file reference from ref_filter_snps_ch
         file index from sam_filter_snps_ch
         file dict from dict_filter_snps_ch
-	file snps from snps_ch
-	file snp_index from snps_recal_index
+        file snps from snps_ch
+        file snp_index from snps_recal_index
 
-	output:
-	file("snps/filtered_snps.vcf.gz") into snp_for_snpeff
-	
-	"""
-	mkdir snps
-	gatk VariantFiltration \
+        output:
+        file("snps/filtered_snps.vcf.gz") into snps_for_snpeff
+        file("snps/filtered_snps.vcf.gz.tbi") into snps_index_for_snpeff
+
+        """
+        mkdir snps
+        gatk VariantFiltration \
         -R ${reference} \
         -V ${snps} \
-	-O snps/filtered_snps.vcf.gz \
-	-filter-name "QD_filter" -filter "QD $params.qd_snp" \
-	-filter-name "FS_filter" -filter "FS $params.fs_snp" \
-	-filter-name "MQ_filter" -filter "MQ $params.mq_snp" \
-	-filter-name "MQRankSum_filter" -filter "MQRankSum $params.mqrs_snp" \
-	-filter-name "ReadPosRankSum_filter" -filter "ReadPosRankSum $params.rprs_snp"
-	"""
+        -O snps/filtered_snps.vcf.gz \
+        -filter-name "QD_filter" -filter "QD $params.qd_snp" \
+        -filter-name "FS_filter" -filter "FS $params.fs_snp" \
+        -filter-name "MQ_filter" -filter "MQ $params.mq_snp" \
+        -filter-name "MQRankSum_filter" -filter "MQRankSum $params.mqrs_snp" \
+        -filter-name "ReadPosRankSum_filter" -filter "ReadPosRankSum $params.rprs_snp"
+        """
 }
+
 process filter_indels {
-	container 'broadinstitute/gatk:latest'
-	cpus{16}
-	
-	input:
-	file reference from ref_filter_indels_ch
-	file index from sam_filter_indels_ch
+        container 'broadinstitute/gatk:latest'
+        cpus {16}
+
+        input:
+        file reference from ref_filter_indels_ch
+        file index from sam_filter_indels_ch
         file dict from dict_filter_indels_ch
-	file indels from indels_ch
-	file indels_index from indels_recal_index
+        file indels from indels_ch
+        file indels_index from indels_recal_index
 
-	output:
-	file("filtered_indels.vcf.gz") into indels_for_snpeff
+        output:
+        file("filtered_indels.vcf.gz") into indels_for_snpeff
+        file("filtered_indels.vcf.gz") into indels_index_for_snpeff
 
-	"""
-	gatk VariantFiltration \
-	-R ${reference} \
-	-V ${indels} \
-	-O filtered_indels.vcf.gz \
-	-filter-name "QD_filter" -filter "QD $params.qd_indel" \
-	-filter-name "FS_filter" -filter "FS $params.fs_indel" \
-	-filter-name "ReadPosRankSum_filter" -filter "ReadPosRankSum $params.rprs_indel"
-	"""
+        """
+        gatk VariantFiltration \
+        -R ${reference} \
+        -V ${indels} \
+        -O filtered_indels.vcf.gz \
+        -filter-name "QD_filter" -filter "QD $params.qd_indel" \
+        -filter-name "FS_filter" -filter "FS $params.fs_indel" \
+        -filter-name "ReadPosRankSum_filter" -filter "ReadPosRankSum $params.rprs_indel"
+        """
 }
 
 process annotate_snp{
-	container 'dceoy/snpeff:latest'
-	cpus{8}
-	
-	publishDir "${outdir}", mode: 'copy', pattern: '*.html'
-	publishDir "${outdir}", mode: 'copy', pattern: '*.ann.vcf'
-	input:
-	file filtered_snp from snp_for_snpeff
+        cpus {8}
+        publishDir "${out_dir}", mode: 'copy'
 
-	output:
-	file ("ann_snp.ann.vcfz")
-	file("snp_annotation_report.html")
+        input:
+        file filtered_snp from snps_for_snpeff
 
-	"""
-	java -Xmx8g -jar snpEff.jar -v -stats snp_annotation_report.html Sorghum_bicolor ${filtered_snp}  > ann_snp.ann.vcfz
-	"""
+        output:
+        file("ann_snps.ann.vcfz")
+        file("snps_ann_report.html")
+
+        """
+        mkdir data
+        snpEff -i vcf -o GATK -stats snps_ann_report.html ${snpEff_db} filtered_snps.vcf.gz > ann_snps.ann.vcfz
+        """
 }
 
 process annotate_indels{
-	container 'dceoy/snpeff:latest'
-        cpus{8}
+        cpus {8}
+        publishDir "${out_dir}", mode: 'copy'
 
-        publishDir "${outdir}", mode: 'copy', pattern: '*.html'
-        publishDir "${outdir}", mode: 'copy', pattern: '*.ann.vcf'
         input:
         file filtered_indels from indels_for_snpeff
 
         output:
-        file ("ann_indels.ann.vcfz")
-        file("indel_annotation_report.html")
+        file("ann_indels.ann.vcfz")
+        file("indels_ann_report.html")
 
         """
-        java -Xmx8g -jar snpEff.jar -v -stats indel_annotation_report.html Sorghum_bicolor ${filtered_snp}  > ann_indels.ann.vcfz
+        mkdir data
+        snpEff -i vcf -o GATK -stats indels_ann_report.html ${snpEff_db} filtered_indels.vcf.gz > ann_indels.ann.vcfz
         """
 }
 
