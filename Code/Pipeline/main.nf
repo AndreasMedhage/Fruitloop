@@ -459,7 +459,6 @@ process annotate_snp{
         file("snps_ann_report.html")
 
         """
-        mkdir data
         snpEff -i vcf -o GATK -stats snps_ann_report.html ${snpEff_db} filtered_snps.vcf.gz > ann_snps.ann.vcfz
         """
 }
@@ -476,7 +475,6 @@ process annotate_indels{
         file("indels_ann_report.html")
 
         """
-        mkdir data
         snpEff -i vcf -o GATK -stats indels_ann_report.html ${snpEff_db} filtered_indels.vcf.gz > ann_indels.ann.vcfz
         """
 }
