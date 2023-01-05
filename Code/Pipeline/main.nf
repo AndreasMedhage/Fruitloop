@@ -227,7 +227,7 @@ process filter_known_indels {
 }
 
 
-process bqsr_initialization {
+process apply_bqsr {
 	container 'broadinstitute/gatk:latest'
         cpus {16}
 
@@ -240,15 +240,13 @@ process bqsr_initialization {
         file known_indels from filtered_known_indels_ch
 
         output:
-        file("${marked_dedup.baseName}_recal_data.table") into baserecal_table_ch
-        file("${marked_dedup.baseName}_recal_data.table") into baserecal_report_ch
+	file("${marked_dedup.baseName}_bqsr.bam") into bam_bqsr_ch
+	file("${marked_dedup.baseName}_bqsr.bai") into bam_bqsr_index_ch
 
         """
-	gatk IndexFeatureFile \
-	-I ${known_snps}
+	gatk IndexFeatureFile -I ${known_snps}
 	
-	gatk IndexFeatureFile \
-        -I ${known_indels}
+	gatk IndexFeatureFile -I ${known_indels}
 
         gatk BaseRecalibrator \
         -I ${marked_dedup} \
@@ -256,25 +254,11 @@ process bqsr_initialization {
         -R ${reference} \
         --known-sites ${known_snps} \
         --known-sites ${known_indels}
-        """
-}
-
-process apply_bqsr {
-	container 'broadinstitute/gatk:latest'
-        cpus {16}
-
-        input:
-        file bam_dedup from dedup_ch
-        file table from baserecal_table_ch
-
-        output:
-        file("${bam_dedup.baseName}_bqsr.bam") into bam_bqsr_ch
-	file("${bam_dedup.baseName}_bqsr.bai") into bam_bqsr_index_ch
-        """
+        
         gatk ApplyBQSR \
-        -I ${bam_dedup} \
-        -bqsr ${bam_dedup.baseName}_recal_data.table \
-        -O ${bam_dedup.baseName}_bqsr.bam \
+        -I ${marked_dedup} \
+        -bqsr ${marked_dedup.baseName}_recal_data.table \
+        -O ${marked_dedup.baseName}_bqsr.bam \
         -OBI true
         """
 }
@@ -459,6 +443,7 @@ process annotate_snp{
         file("snps_ann_report.html")
 
         """
+        mkdir data
         snpEff -i vcf -o GATK -stats snps_ann_report.html ${snpEff_db} filtered_snps.vcf.gz > ann_snps.ann.vcfz
         """
 }
@@ -475,6 +460,7 @@ process annotate_indels{
         file("indels_ann_report.html")
 
         """
+        mkdir data
         snpEff -i vcf -o GATK -stats indels_ann_report.html ${snpEff_db} filtered_indels.vcf.gz > ann_indels.ann.vcfz
         """
 }
