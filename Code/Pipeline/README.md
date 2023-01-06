@@ -11,7 +11,7 @@ Pipline - directory pipline code
  		-profile - nextflow profile
 		--project - project code
 		--clusterOptions - computing cluster options, for ex  "-M <server name>"
-		-resume - To resume last run"
+		-resume - To resume last run
 
 		REWUIRE: nextflow, samtools, BWA-mem2
 
@@ -32,6 +32,17 @@ Pipline - directory pipline code
 			rprs_indel = Mann-Whitney Rank Sum Test (distance end of read) filter for indels, ex "> 20.0"
 		}
 
+	main_untested.nf - untested version of main including attempt att including gvcf files from previous run
+		--inputreads - input directory, containing forward and reverse reads
+                --refgenome - reference genome to map reads to
+                --outdir - out directory, where output files should be pubished
+		--previousgvcf - input directory containing gvcf files from previous run for inclution in join genotyping
+                --annotation_db - database for annotation
+                -c - config file
+                -profile - nextflow profile
+                --project - project code
+                --clusterOptions - computing cluster options, for ex  "-M <server name>"
+                -resume - To resume last run
 To run:
 
 1. edit inizialize.sh
