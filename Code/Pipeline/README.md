@@ -45,6 +45,7 @@ Pipline - directory pipline code
                 -resume - To resume last run
 To run:
 
+
 1. edit inizialize.sh
 	1.1. set trimmedreads to path to direcory containging forward and reverse reads
 	1.2. set outdirectory to path directory to output into
@@ -55,6 +56,17 @@ To run:
 	2.1. select pattern forward/reverse
 	2.2. set up filter parameter values (parameters based on standar parameters of best practice, if others parameters are needed they need to be set up in the main file)
 
-3. run the script "sh initialize.sh"
+3. module load tmux
+
+4. Create new session
+	tmux session -s "name of session"
+
+5. Detach from session
+	CTRL^B + D
+
+6. Attach to session
+	tmux attatch -t "name of session"
+
+7. run the script "sh initialize.sh"
 
 
