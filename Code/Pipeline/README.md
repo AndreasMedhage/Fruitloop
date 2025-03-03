@@ -13,7 +13,7 @@ Pipline - directory pipline code
 		--clusterOptions - computing cluster options, for ex  "-M <server name>"
 		-resume - To resume last run
 
-		REWUIRE: nextflow, samtools, BWA-mem2
+		REQUIRE: nextflow, samtools, BWA-mem2
 
         nextflow.config - configuration file for main.nf
                 process.executor - executor
